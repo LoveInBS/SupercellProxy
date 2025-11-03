@@ -1,4 +1,4 @@
-name: Get Public Server Key
+name: Get Server Public Key
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
         type: string
 
 jobs:
-  dump:
+  extract-server-public-key:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
