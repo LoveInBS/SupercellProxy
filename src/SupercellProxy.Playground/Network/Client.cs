@@ -14,41 +14,11 @@ public class Client(string upstreamHost, int upstreamPort)
         await using var networkStream = upstream.GetStream();
         await using var supercellStream = new SupercellStream(networkStream);
 
-        SendMessage(supercellStream, 10100, 0, CreateLoginMessage());
-        Console.WriteLine(ReadMessage(supercellStream));
+        supercellStream.SendMessage(CreateLoginMessage());
+        Console.WriteLine(supercellStream.ReadMessage());
     }
 
-    private static void SendMessage(SupercellStream stream, ushort id, ushort version, ReadOnlySpan<byte> message)
-    {
-        var span = (stackalloc byte[7]);
-        
-        BinaryPrimitives.WriteUInt16BigEndian(span[..2], id);
-
-        var length = message.Length;
-        
-        span[2] = (byte)(length >> 16);
-        span[3] = (byte)(length >> 8);
-        span[4] = (byte)length;
-        
-        BinaryPrimitives.WriteUInt16BigEndian(span[5..7], version);
-
-        stream.WriteBytes(span);
-        stream.WriteBytes(message);
-    }
-
-    private static Message ReadMessage(SupercellStream stream)
-    {
-        var header = stream.ReadBytes(7);
-        var span = header.AsSpan();
-
-        var id = BinaryPrimitives.ReadUInt16BigEndian(span[0..2]);
-        var length = (span[2] << 16) | (span[3] << 8) | span[4];
-        var version = BinaryPrimitives.ReadUInt16BigEndian(span[5..7]);
-
-        return new Message(id, version, stream.ReadBytes(length));
-    }
-
-    private static ReadOnlySpan<byte> CreateLoginMessage()
+    private static Message CreateLoginMessage()
     {
         var memoryStream = new MemoryStream();
         var supercellStream = new SupercellStream(memoryStream);
@@ -65,6 +35,6 @@ public class Client(string upstreamHost, int upstreamPort)
         supercellStream.WriteInt32(1);
         supercellStream.WriteInt32(1);
         
-        return memoryStream.ToArray();
+        return new Message(10100, 0, memoryStream.ToArray());
     }
 }
