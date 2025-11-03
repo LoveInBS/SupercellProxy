@@ -5,4 +5,5 @@ var listenPort = args.Length > 1 && int.TryParse(args[1], out var lp) ? lp : 933
 var upstreamPort = args.Length > 2 && int.TryParse(args[2], out var up) ? up : 9339;
 
 var proxy = new Proxy(listenPort, upstreamPort, upstreamHost);
+var client = new Client(upstreamHost, upstreamPort);
 // await proxy.RunAsync();
