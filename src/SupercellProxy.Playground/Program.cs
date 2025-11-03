@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
 using SupercellProxy.Playground.Network;
+using SupercellProxy.Playground.Network.Streams;
 
 var upstreamHost = args.Length > 0 ? args[0] : "game.haydaygame.com";
 var listenPort = args.Length > 1 && int.TryParse(args[1], out var lp) ? lp : 9339;

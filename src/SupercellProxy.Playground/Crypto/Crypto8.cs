@@ -1,5 +1,6 @@
 ﻿using SupercellProxy.Playground.Crypto.NaCl;
 using SupercellProxy.Playground.Crypto.NaCl.Internal.Blake2;
+using SupercellProxy.Playground.Network;
 
 namespace SupercellProxy.Playground.Crypto;
 
