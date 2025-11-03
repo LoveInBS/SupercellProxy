@@ -57,12 +57,15 @@ static Span<byte> GetServerPublicKey(ReadOnlySpan<byte> binary)
             continue;
 
         if (foundIndex is not -1)
-            throw new InvalidOperationException($"Multiple server public keys found in the binary:\n" +
+            throw new InvalidOperationException($"Multiple possible server public keys found in the binary (expected 1):\n" +
                 $"[{foundIndex}]:{Convert.ToHexString(binary.SliceBefore(foundIndex, KeyLength))}\n" +
                 $"[{index}]:{Convert.ToHexString(binary.SliceBefore(index, KeyLength))}");
 
         foundIndex = index;
     }
+
+    if (foundIndex is -1)
+        throw new InvalidOperationException("Could not find server public key in the binary.");
 
     return DecodeServerPublicKey(binary.SliceBefore(foundIndex, KeyLength));
 
