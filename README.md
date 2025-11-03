@@ -6,6 +6,7 @@
 - Clash Royale
 - Squad Busters
 - Boom Beach
+- mo\.co
 
 ## Supercell Games Public Server Keys
 A table of Supercell Games [**Public Server Keys**](https://github.com/caunt/SupercellProxy/blob/main/KEYS.md).  
