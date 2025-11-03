@@ -1,0 +1,12 @@
+# Supercell Games - Server Public Keys
+- Keys below are extracted with [this automated workflow](https://github.com/caunt/SupercellProxy/actions/workflows/server-public-key.yaml)
+
+## Brawl Stars
+| Version | Key                                                                |
+| ------- | ------------------------------------------------------------------ |
+| 64.226  | `0BD3FB945510B29F5FF6304859FDE0EFC8EAE01AF3557B3F4DDE317FAA91BB5D` |
+
+## Hay Day
+| Version  | Key                                                                |
+| -------- | ------------------------------------------------------------------ |
+| 1.67.175 | `FF9C8D567D78F6DE1BDB27F7B4E4EE8D3F359292149F5EF3C46D59C1404DC91D` |
