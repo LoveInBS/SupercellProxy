@@ -1,5 +1,5 @@
 # Supercell Games - Server Public Keys
-- Keys below are extracted with [this automated workflow](https://github.com/caunt/SupercellProxy/actions/workflows/server-public-key.yaml)
+- Keys below are extracted with [this automated workflow](https://github.com/caunt/SupercellProxy/blob/main/.github/workflows/server-public-key.yaml) ([source code](https://github.com/caunt/SupercellProxy/blob/main/src/SupercellProxy.PublicKeyExtractor/EntryPoint.cs))
 
 ## Brawl Stars
 | Version | Key                                                                |
