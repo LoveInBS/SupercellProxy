@@ -2,7 +2,7 @@
 
 public static class StringExtensions
 {
-    public static async ValueTask<byte[]> ReadContentAsync(this string input)
+    public static async ValueTask<byte[]> ReadContentAsync(this string input, CancellationToken cancellationToken = default)
     {
         if (Uri.TryCreate(input, UriKind.Absolute, out var parsedUri))
         {
@@ -11,12 +11,19 @@ public static class StringExtensions
             if (string.Equals(scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) || string.Equals(scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
             {
                 using var httpClient = new HttpClient();
-                return await httpClient.GetByteArrayAsync(parsedUri);
+
+                if (parsedUri.Host is "temp.sh")
+                {
+                    var response = await httpClient.PostAsync(parsedUri, content: null, cancellationToken);
+                    return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+                }
+
+                return await httpClient.GetByteArrayAsync(parsedUri, cancellationToken);
             }
 
             if (string.Equals(scheme, Uri.UriSchemeFile, StringComparison.OrdinalIgnoreCase))
             {
-                return await File.ReadAllBytesAsync(parsedUri.LocalPath);
+                return await File.ReadAllBytesAsync(parsedUri.LocalPath, cancellationToken);
             }
         }
 
