@@ -1,16 +1,16 @@
 ﻿using System.Buffers.Binary;
 using System.Text;
 
-namespace SupercellProxy.Playground;
+namespace SupercellProxy.Playground.Network;
 
 public class ScStream(byte[] buffer) : IDisposable
 {
-    public int Position { get; private set; } = 0;
+    public int Position { get; private set; }
     public int Length => buffer.Length;
     public Span<byte> Span => buffer;
 
-    protected int _booleanOffset;
-    protected byte _booleanAdditionalValue;
+    private int _booleanOffset;
+    private byte _booleanAdditionalValue;
 
     public byte ReadByte()
     {
