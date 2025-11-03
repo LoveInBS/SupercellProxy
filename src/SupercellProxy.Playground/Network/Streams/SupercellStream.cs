@@ -15,9 +15,10 @@ public class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDispo
     private int _booleanWriteOffset;
     private byte _booleanWriteAccumulator;
 
-    public void SendMessage(Message message)
+    public async ValueTask SendMessageAsync(Message message, CancellationToken cancellationToken = default)
     {
-        var span = (stackalloc byte[7]);
+        var header = new byte[7];
+        var span = header.AsSpan();
         
         BinaryPrimitives.WriteUInt16BigEndian(span[..2], message.Id);
 
@@ -29,20 +30,20 @@ public class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDispo
         
         BinaryPrimitives.WriteUInt16BigEndian(span[5..7], message.Version);
 
-        WriteBytes(span);
-        WriteBytes(message.Payload);
+        await WriteBytesAsync(header, cancellationToken);
+        await WriteBytesAsync(message.Payload, cancellationToken);
     }
 
-    public Message ReadMessage()
+    public async ValueTask<Message> ReadMessageAsync(CancellationToken cancellationToken = default)
     {
-        var header = ReadBytes(7);
+        var header = await ReadBytesAsync(7, cancellationToken);
         var span = header.AsSpan();
 
         var id = BinaryPrimitives.ReadUInt16BigEndian(span[0..2]);
         var length = (span[2] << 16) | (span[3] << 8) | span[4];
         var version = BinaryPrimitives.ReadUInt16BigEndian(span[5..7]);
 
-        return new Message(id, version, ReadBytes(length));
+        return new Message(id, version, await ReadBytesAsync(length, cancellationToken));
     }
 
     public byte ReadByte()
@@ -57,21 +58,21 @@ public class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDispo
         return (byte)value;
     }
 
-    public byte[] ReadBytes(int count)
+    public async ValueTask<byte[]> ReadBytesAsync(int count, CancellationToken cancellationToken = default)
     {
         ResetBoolean();
 
-        if (count < 0)
-            throw new ArgumentOutOfRangeException(nameof(count));
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         var buffer = new byte[count];
-        ReadExactly(buffer);
+        await stream.ReadExactlyAsync(buffer, cancellationToken);
+        
         return buffer;
     }
 
-    public byte[] ReadByteArray()
+    public async ValueTask<byte[]> ReadByteArrayAsync(CancellationToken cancellationToken = default)
     {
-        var length = ReadInt32();
+        var length = await ReadInt32Async(cancellationToken);
 
         if (length == 0)
             return [];
@@ -79,7 +80,7 @@ public class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDispo
         if (length < 0)
             throw new InvalidDataException("Negative length for byte array.");
 
-        return ReadBytes(length);
+        return await ReadBytesAsync(length, cancellationToken);
     }
 
     public bool ReadBoolean()
@@ -93,29 +94,29 @@ public class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDispo
         return value;
     }
 
-    public ushort ReadUInt16()
+    public async ValueTask<ushort> ReadUInt16Async(CancellationToken cancellationToken = default)
     {
-        var buf = ReadBytes(2);
+        var buf = await ReadBytesAsync(2, cancellationToken);
         return BinaryPrimitives.ReadUInt16BigEndian(buf);
     }
 
-    public int ReadInt32()
+    public async ValueTask<int> ReadInt32Async(CancellationToken cancellationToken = default)
     {
-        var buf = ReadBytes(4);
+        var buf = await ReadBytesAsync(4, cancellationToken);
         return BinaryPrimitives.ReadInt32BigEndian(buf);
     }
 
-    public string? ReadString()
+    public async ValueTask<string> ReadStringAsync(CancellationToken cancellationToken = default)
     {
-        var length = ReadInt32();
+        var length = await ReadInt32Async(cancellationToken);
 
         if (length < 0)
-            return null;
+            throw new InvalidDataException("Negative length for string array.");
 
         if (length == 0)
             return string.Empty;
 
-        var bytes = ReadBytes(length);
+        var bytes = await ReadBytesAsync(length, cancellationToken);
         return Encoding.UTF8.GetString(bytes);
     }
 
@@ -146,19 +147,19 @@ public class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDispo
     public void WriteByte(byte value)
     {
         FlushBoolean();
-        stream.Write([value]);
+        stream.WriteByte(value);
     }
 
-    public void WriteBytes(ReadOnlySpan<byte> source)
+    public async ValueTask WriteBytesAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
     {
         FlushBoolean();
-        stream.Write(source);
+        await stream.WriteAsync(source, cancellationToken);
     }
 
-    public void WriteByteArray(ReadOnlySpan<byte> source)
+    public async ValueTask WriteByteArrayAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
     {
-        WriteInt32(source.Length);
-        WriteBytes(source);
+        await WriteInt32Async(source.Length, cancellationToken);
+        await WriteBytesAsync(source, cancellationToken);
     }
 
     public void WriteBoolean(bool value)
@@ -172,37 +173,37 @@ public class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDispo
         _booleanWriteOffset = (_booleanWriteOffset + 1) & 7;
 
         if (_booleanWriteOffset == 0)
-            stream.Write([_booleanWriteAccumulator]);
+            stream.WriteByte(_booleanWriteAccumulator);
     }
 
-    public void WriteUInt16(ushort value)
+    public async ValueTask WriteUInt16Async(ushort value, CancellationToken cancellationToken = default)
     {
         FlushBoolean();
 
-        Span<byte> buf = stackalloc byte[2];
+        var buf = new byte[2];
         BinaryPrimitives.WriteUInt16BigEndian(buf, value);
-        stream.Write(buf);
+        await stream.WriteAsync(buf, cancellationToken);
     }
 
-    public void WriteInt32(int value)
+    public async ValueTask WriteInt32Async(int value, CancellationToken cancellationToken = default)
     {
         FlushBoolean();
 
-        Span<byte> buf = stackalloc byte[4];
+        var buf = new byte[4];
         BinaryPrimitives.WriteInt32BigEndian(buf, value);
-        stream.Write(buf);
+        await stream.WriteAsync(buf, cancellationToken);
     }
 
-    public void WriteString(string? value)
+    public async ValueTask WriteStringAsync(string? value, CancellationToken cancellationToken = default)
     {
         if (value is null)
         {
-            WriteInt32(-1);
+            await WriteInt32Async(-1, cancellationToken);
             return;
         }
 
         var byteCount = Encoding.UTF8.GetByteCount(value);
-        WriteInt32(byteCount);
+        await WriteInt32Async(byteCount, cancellationToken);
 
         FlushBoolean();
 
@@ -211,18 +212,18 @@ public class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDispo
 
         if (byteCount <= 1024)
         {
-            Span<byte> buf = stackalloc byte[byteCount];
+            var buf = new byte[byteCount];
             Encoding.UTF8.GetBytes(value, buf);
-            stream.Write(buf);
+            await stream.WriteAsync(buf, cancellationToken);
             return;
         }
 
         var rented = new byte[byteCount];
         Encoding.UTF8.GetBytes(value, 0, value.Length, rented, 0);
-        stream.Write(rented, 0, rented.Length);
+        await stream.WriteAsync(rented, 0, rented.Length, cancellationToken);
     }
 
-    public void WriteVarInt(int value)
+    public async ValueTask WriteVarIntAsync(int value, CancellationToken cancellationToken = default)
     {
         FlushBoolean();
 
@@ -244,7 +245,7 @@ public class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDispo
         }
 
         var encoded = isNegative ? (1UL << chosenWidth) - absolute : absolute;
-        Span<byte> small = stackalloc byte[10];
+        var small = new byte[10];
         var idx = 0;
 
         var first = (byte)(encoded & 0x3FUL);
@@ -272,23 +273,7 @@ public class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDispo
             small[idx++] = b;
         }
 
-        stream.Write(small[..idx]);
-    }
-
-    private void ReadExactly(Span<byte> destination)
-    {
-        var total = 0;
-
-        while (total < destination.Length)
-        {
-            var read = stream.Read(destination[total..]);
-            if (read == 0)
-                throw new EndOfStreamException();
-
-            total += read;
-        }
-
-        Position += total;
+        await stream.WriteAsync(small.AsMemory(0, idx), cancellationToken);
     }
 
     private void FlushBoolean()
@@ -296,7 +281,7 @@ public class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDispo
         if (_booleanWriteOffset <= 0)
             return;
 
-        stream.Write([_booleanWriteAccumulator]);
+        stream.WriteByte(_booleanWriteAccumulator);
         
         _booleanWriteOffset = 0;
         _booleanWriteAccumulator = 0;

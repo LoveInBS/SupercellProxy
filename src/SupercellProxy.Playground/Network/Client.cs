@@ -14,26 +14,26 @@ public class Client(string upstreamHost, int upstreamPort)
         await using var networkStream = upstream.GetStream();
         await using var supercellStream = new SupercellStream(networkStream);
 
-        supercellStream.SendMessage(CreateLoginMessage());
-        Console.WriteLine(supercellStream.ReadMessage());
+        await supercellStream.SendMessageAsync(await CreateLoginMessageAsync(), cancellationToken);
+        Console.WriteLine(await supercellStream.ReadMessageAsync(cancellationToken));
     }
 
-    private static Message CreateLoginMessage()
+    private static async ValueTask<Message> CreateLoginMessageAsync()
     {
         var memoryStream = new MemoryStream();
         var supercellStream = new SupercellStream(memoryStream);
         
-        supercellStream.WriteInt32(3);
-        supercellStream.WriteInt32(38);
+        await supercellStream.WriteInt32Async(3);
+        await supercellStream.WriteInt32Async(38);
         
-        supercellStream.WriteInt32(1);
-        supercellStream.WriteInt32(67);
-        supercellStream.WriteInt32(175);
+        await supercellStream.WriteInt32Async(1);
+        await supercellStream.WriteInt32Async(67);
+        await supercellStream.WriteInt32Async(175);
         
-        supercellStream.WriteString("be514e02b198d18287af1405089a0e72b849ac69");
+        await supercellStream.WriteStringAsync("be514e02b198d18287af1405089a0e72b849ac69");
         
-        supercellStream.WriteInt32(1);
-        supercellStream.WriteInt32(1);
+        await supercellStream.WriteInt32Async(1);
+        await supercellStream.WriteInt32Async(1);
         
         return new Message(10100, 0, memoryStream.ToArray());
     }
