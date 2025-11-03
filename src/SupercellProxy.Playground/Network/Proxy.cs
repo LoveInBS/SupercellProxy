@@ -24,7 +24,7 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
         }
     }
 
-    private static void PacketSent(Direction direction, ushort id, ushort version, ScStream stream)
+    private static void PacketSent(Direction direction, ushort id, ushort version, ScBuffer buffer)
     {
         // [00:00:06][serverbound,version=...0,id=10100] Hello from Client
         //     protocolVersion=3
@@ -73,7 +73,7 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
 
         try
         {
-            reader(prefix, stream);
+            reader(prefix, buffer);
         }
         catch (Exception exception)
         {
@@ -81,7 +81,7 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
         }
     }
 
-    private static void ReadClientLoginPacket(string prefix, ScStream stream)
+    private static void ReadClientLoginPacket(string prefix, ScBuffer buffer)
     {
         // This packet is encrypted already
         var supercellPublicKey = new byte[]
@@ -101,102 +101,102 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
 
         // https://github.com/FICTURE7/CoCSharp/blob/server-dev/src/CoCSharp.Proxy/MessageProcessorNaClProxy.cs#L102
 
-        _ = stream.ReadToEnd();
+        _ = buffer.ReadToEnd();
         return;
 
-        var highId = stream.ReadInt32();
-        var lowId = stream.ReadInt32();
-        var token = stream.ReadString();
+        var highId = buffer.ReadInt32();
+        var lowId = buffer.ReadInt32();
+        var token = buffer.ReadString();
 
-        var majorVersion = stream.ReadVarInt();
-        var minorVersion = stream.ReadVarInt();
-        var buildVersion = stream.ReadVarInt();
+        var majorVersion = buffer.ReadVarInt();
+        var minorVersion = buffer.ReadVarInt();
+        var buildVersion = buffer.ReadVarInt();
 
-        var masterHash = stream.ReadString();
+        var masterHash = buffer.ReadString();
 
-        var unknown1 = stream.ReadInt32();
+        var unknown1 = buffer.ReadInt32();
 
-        var openUdid = stream.ReadString();
-        var macAddress = stream.ReadString();
-        var model = stream.ReadString();
+        var openUdid = buffer.ReadString();
+        var macAddress = buffer.ReadString();
+        var model = buffer.ReadString();
 
-        var advertiseId = stream.ReadString();
-        var osVersion = stream.ReadString();
+        var advertiseId = buffer.ReadString();
+        var osVersion = buffer.ReadString();
 
-        var isAndroid = stream.ReadBoolean();
+        var isAndroid = buffer.ReadBoolean();
 
-        var unknown2 = stream.ReadString();
+        var unknown2 = buffer.ReadString();
 
-        var androidId = stream.ReadString();
+        var androidId = buffer.ReadString();
 
-        var region = stream.ReadString();
+        var region = buffer.ReadString();
 
         Console.WriteLine($"{prefix} Login from Client" + $"\n\thighId={highId}" + $"\n\tlowId={lowId}" + $"\n\ttoken={token}" + $"\n\tclientVersion={majorVersion}.{minorVersion}.{buildVersion}" + $"\n\tmasterHash={masterHash}" + $"\n\tunknown1={unknown1}" + $"\n\topenUdid={openUdid}" + $"\n\tmacAddress={macAddress}" + $"\n\tmodel={model}" + $"\n\tadvertiseId={advertiseId}" + $"\n\tosVersion={osVersion}" + $"\n\tisAndroid={isAndroid}" + $"\n\tunknown2={unknown2}" + $"\n\tandroidId={androidId}" + $"\n\tregion={region}");
     }
 
-    private static void ReadClientHelloPacket(string prefix, ScStream stream)
+    private static void ReadClientHelloPacket(string prefix, ScBuffer buffer)
     {
-        var protocolVersion = stream.ReadInt32();
-        var keyVersion = stream.ReadInt32();
+        var protocolVersion = buffer.ReadInt32();
+        var keyVersion = buffer.ReadInt32();
 
-        var majorVersion = stream.ReadInt32();
-        var minorVersion = stream.ReadInt32();
-        var patchVersion = stream.ReadInt32();
+        var majorVersion = buffer.ReadInt32();
+        var minorVersion = buffer.ReadInt32();
+        var patchVersion = buffer.ReadInt32();
 
-        var fingerprintSha1 = stream.ReadString();
+        var fingerprintSha1 = buffer.ReadString();
 
-        var deviceType = stream.ReadInt32();
-        var appStore = stream.ReadInt32();
+        var deviceType = buffer.ReadInt32();
+        var appStore = buffer.ReadInt32();
 
         Console.WriteLine($"{prefix} Hello from Client" + $"\n\tprotocolVersion={protocolVersion}" + $"\n\tkeyVersion={keyVersion}" + $"\n\tclientVersion={majorVersion}.{minorVersion}.{patchVersion}" + $"\n\tfingerprintSha1={fingerprintSha1}" + $"\n\tdeviceType={deviceType}" + $"\n\tappStore={appStore}");
     }
 
-    private static void ReadServerHelloPacket(string prefix, ScStream stream)
+    private static void ReadServerHelloPacket(string prefix, ScBuffer buffer)
     {
-        var sessionKey = stream.ReadByteArray();
+        var sessionKey = buffer.ReadByteArray();
 
         Console.WriteLine($"{prefix} Hello from Server" + $"\n\tsessionKey={Convert.ToHexString(sessionKey)}");
     }
 
-    private static void ReadHelloFailedPacket(string prefix, ScStream stream)
+    private static void ReadHelloFailedPacket(string prefix, ScBuffer buffer)
     {
         // 8 - UpdateRequired
-        var errorCode = stream.ReadInt32();
-        var resourceFingerprintData = stream.ReadString();
-        var redirectDomain = stream.ReadString();
-        var contentURL = stream.ReadString();
-        var updateURL = stream.ReadString();
-        var reason = stream.ReadString();
-        var secondsUntilMaintenanceEnd = stream.ReadInt32();
-        var unknown1 = stream.ReadByte();
-        var unknown2 = stream.ReadString();
-        var unknown3 = stream.ReadString();
-        var unknown4 = stream.ReadInt32();
-        var unknown5 = stream.ReadInt32();
-        var unknown6 = stream.ReadString();
-        var unknown7 = stream.ReadString();
+        var errorCode = buffer.ReadInt32();
+        var resourceFingerprintData = buffer.ReadString();
+        var redirectDomain = buffer.ReadString();
+        var contentURL = buffer.ReadString();
+        var updateURL = buffer.ReadString();
+        var reason = buffer.ReadString();
+        var secondsUntilMaintenanceEnd = buffer.ReadInt32();
+        var unknown1 = buffer.ReadByte();
+        var unknown2 = buffer.ReadString();
+        var unknown3 = buffer.ReadString();
+        var unknown4 = buffer.ReadInt32();
+        var unknown5 = buffer.ReadInt32();
+        var unknown6 = buffer.ReadString();
+        var unknown7 = buffer.ReadString();
 
-        var unknown8 = new int[BinaryPrimitives.ReverseEndianness(stream.ReadUInt16())];
+        var unknown8 = new int[BinaryPrimitives.ReverseEndianness(buffer.ReadUInt16())];
         for (var i = 0; i < unknown8.Length; i++)
-            unknown8[i] = stream.ReadInt32();
+            unknown8[i] = buffer.ReadInt32();
 
-        var unknown9 = stream.ReadByte();
+        var unknown9 = buffer.ReadByte();
 
         Console.WriteLine($"{prefix} LoginFailed from server" + $"\n\terrorCode={errorCode}" + $"\n\tresourceFingerprintData={resourceFingerprintData}" + $"\n\tredirectDomain={redirectDomain}" + $"\n\tcontentURL={contentURL}" + $"\n\tupdateURL={updateURL}" + $"\n\treason={reason}" + $"\n\tsecondsUntilMaintenanceEnd={secondsUntilMaintenanceEnd}" + $"\n\tunknown1={unknown1}" + $"\n\tunknown2={unknown2}" + $"\n\tunknown3={unknown3}" + $"\n\tunknown4={unknown4}" + $"\n\tunknown5={unknown5}" + $"\n\tunknown6={unknown6}" + $"\n\tunknown7={unknown7}" + $"\n\tunknown8=[{string.Join(", ", unknown8)}]" + $"\n\tunknown9={unknown9}");
     }
 
-    private static void ReadUnknownPacket(string prefix, ScStream stream)
+    private static void ReadUnknownPacket(string prefix, ScBuffer buffer)
     {
         const int maxOutputWidth = 64;
 
-        var data = stream.ReadToEnd();
+        var data = buffer.ReadToEnd();
         var sliced = data.Length > maxOutputWidth;
         var preview = Convert.ToHexString(data[..Math.Min(maxOutputWidth, data.Length)]);
 
         if (sliced)
             preview += "...";
 
-        Console.WriteLine($"{prefix} length={PadLeft(stream.Length, 5)} => {preview}");
+        Console.WriteLine($"{prefix} length={PadLeft(buffer.Length, 5)} => {preview}");
     }
 
     private static async Task PumpAsync(NetworkStream source, NetworkStream destination, Direction direction, CancellationToken cancellationToken = default)
@@ -224,8 +224,8 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
 
             try
             {
-                using var stream = new ScStream(payload);
-                PacketSent(direction, id, version, stream);
+                using var buffer = new ScBuffer(payload);
+                PacketSent(direction, id, version, buffer);
             }
             catch (Exception exception)
             {
@@ -258,5 +258,5 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
 
     private static string? PadLeft<T>(T value, int width, char @char = '.') where T : struct => value.ToString()?.PadLeft(width, @char);
 
-    private delegate void PacketReader(string prefix, ScStream stream);
+    private delegate void PacketReader(string prefix, ScBuffer buffer);
 }

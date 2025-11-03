@@ -1,41 +1,45 @@
-﻿using System.Buffers.Binary;
+using System.Buffers.Binary;
 using System.Text;
 
 namespace SupercellProxy.Playground.Network.Streams;
 
-public class ScStream(byte[] buffer) : IDisposable
+public class ScStream(Stream stream, bool leaveOpen = true) : IAsyncDisposable
 {
     public int Position { get; private set; }
-    public int Length => buffer.Length;
-    public Span<byte> Span => buffer;
+    public bool CanRead => stream.CanRead;
+    public bool CanWrite => stream.CanWrite;
 
     private int _booleanOffset;
     private byte _booleanAdditionalValue;
+
+    private int _booleanWriteOffset;
+    private byte _booleanWriteAccumulator;
 
     public byte ReadByte()
     {
         ResetBoolean();
 
-        if (Position + 1 > Length)
+        var value = stream.ReadByte();
+        if (value < 0)
             throw new EndOfStreamException();
 
-        return buffer[Position++];
+        Position += 1;
+        return (byte)value;
     }
 
-    public Span<byte> ReadBytes(int count)
+    public byte[] ReadBytes(int count)
     {
         ResetBoolean();
 
-        if (Position + count > Length)
-            throw new EndOfStreamException();
+        if (count < 0)
+            throw new ArgumentOutOfRangeException(nameof(count));
 
-        var span = buffer.AsSpan(Position, count);
-        Position += count;
-
-        return span;
+        var buffer = new byte[count];
+        ReadExactly(buffer);
+        return buffer;
     }
 
-    public Span<byte> ReadByteArray()
+    public byte[] ReadByteArray()
     {
         var length = ReadInt32();
 
@@ -46,11 +50,6 @@ public class ScStream(byte[] buffer) : IDisposable
             throw new InvalidDataException("Negative length for byte array.");
 
         return ReadBytes(length);
-    }
-
-    public Span<byte> ReadToEnd()
-    {
-        return ReadBytes(Length - Position);
     }
 
     public bool ReadBoolean()
@@ -66,12 +65,14 @@ public class ScStream(byte[] buffer) : IDisposable
 
     public ushort ReadUInt16()
     {
-        return BinaryPrimitives.ReadUInt16BigEndian(ReadBytes(2));
+        var buf = ReadBytes(2);
+        return BinaryPrimitives.ReadUInt16BigEndian(buf);
     }
 
     public int ReadInt32()
     {
-        return BinaryPrimitives.ReadInt32BigEndian(ReadBytes(4));
+        var buf = ReadBytes(4);
+        return BinaryPrimitives.ReadInt32BigEndian(buf);
     }
 
     public string? ReadString()
@@ -81,7 +82,11 @@ public class ScStream(byte[] buffer) : IDisposable
         if (length < 0)
             return null;
 
-        return Encoding.UTF8.GetString(ReadBytes(length));
+        if (length == 0)
+            return string.Empty;
+
+        var bytes = ReadBytes(length);
+        return Encoding.UTF8.GetString(bytes);
     }
 
     public int ReadVarInt()
@@ -99,13 +104,172 @@ public class ScStream(byte[] buffer) : IDisposable
             consumedBitWidth += 7;
         }
 
-        if (isNegative)
-        {
-            var twoComplementBase = 1L << consumedBitWidth;
-            accumulator -= twoComplementBase;
-        }
+        if (!isNegative)
+            return (int)accumulator;
+
+        var twoComplementBase = 1L << consumedBitWidth;
+        accumulator -= twoComplementBase;
 
         return (int)accumulator;
+    }
+
+    public void WriteByte(byte value)
+    {
+        FlushBoolean();
+        stream.Write([value]);
+    }
+
+    public void WriteBytes(ReadOnlySpan<byte> source)
+    {
+        FlushBoolean();
+        stream.Write(source);
+    }
+
+    public void WriteByteArray(ReadOnlySpan<byte> source)
+    {
+        WriteInt32(source.Length);
+        WriteBytes(source);
+    }
+
+    public void WriteBoolean(bool value)
+    {
+        if (_booleanWriteOffset == 0)
+            _booleanWriteAccumulator = 0;
+
+        if (value)
+            _booleanWriteAccumulator |= (byte)(1 << _booleanWriteOffset);
+
+        _booleanWriteOffset = (_booleanWriteOffset + 1) & 7;
+
+        if (_booleanWriteOffset == 0)
+            stream.Write([_booleanWriteAccumulator]);
+    }
+
+    public void WriteUInt16(ushort value)
+    {
+        FlushBoolean();
+
+        Span<byte> buf = stackalloc byte[2];
+        BinaryPrimitives.WriteUInt16BigEndian(buf, value);
+        stream.Write(buf);
+    }
+
+    public void WriteInt32(int value)
+    {
+        FlushBoolean();
+
+        Span<byte> buf = stackalloc byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(buf, value);
+        stream.Write(buf);
+    }
+
+    public void WriteString(string? value)
+    {
+        if (value is null)
+        {
+            WriteInt32(-1);
+            return;
+        }
+
+        var byteCount = Encoding.UTF8.GetByteCount(value);
+        WriteInt32(byteCount);
+
+        FlushBoolean();
+
+        if (byteCount == 0)
+            return;
+
+        if (byteCount <= 1024)
+        {
+            Span<byte> buf = stackalloc byte[byteCount];
+            Encoding.UTF8.GetBytes(value, buf);
+            stream.Write(buf);
+            return;
+        }
+
+        var rented = new byte[byteCount];
+        Encoding.UTF8.GetBytes(value, 0, value.Length, rented, 0);
+        stream.Write(rented, 0, rented.Length);
+    }
+
+    public void WriteVarInt(int value)
+    {
+        FlushBoolean();
+
+        var isNegative = value < 0;
+        var absolute = (ulong)(isNegative ? -(long)value : value);
+
+        int[] widths = [6, 13, 20, 27, 34, 41, 48, 55, 62];
+        var chosenWidth = 62;
+
+        foreach (var candidate in widths)
+        {
+            var limit = 1UL << candidate;
+
+            if (isNegative ? absolute > limit : absolute >= limit)
+                continue;
+
+            chosenWidth = candidate;
+            break;
+        }
+
+        var encoded = isNegative ? (1UL << chosenWidth) - absolute : absolute;
+        Span<byte> small = stackalloc byte[10];
+        var idx = 0;
+
+        var first = (byte)(encoded & 0x3FUL);
+
+        if (isNegative)
+            first |= 0x40;
+
+        if (chosenWidth > 6)
+            first |= 0x80;
+
+        small[idx++] = first;
+
+        encoded >>= 6;
+        var remainingBits = chosenWidth - 6;
+
+        while (remainingBits > 0)
+        {
+            var b = (byte)(encoded & 0x7FUL);
+            encoded >>= 7;
+            remainingBits -= 7;
+
+            if (remainingBits > 0)
+                b |= 0x80;
+
+            small[idx++] = b;
+        }
+
+        stream.Write(small[..idx]);
+    }
+
+    private void ReadExactly(Span<byte> destination)
+    {
+        var total = 0;
+
+        while (total < destination.Length)
+        {
+            var read = stream.Read(destination[total..]);
+            if (read == 0)
+                throw new EndOfStreamException();
+
+            total += read;
+        }
+
+        Position += total;
+    }
+
+    private void FlushBoolean()
+    {
+        if (_booleanWriteOffset <= 0)
+            return;
+
+        stream.Write([_booleanWriteAccumulator]);
+        
+        _booleanWriteOffset = 0;
+        _booleanWriteAccumulator = 0;
     }
 
     private void ResetBoolean()
@@ -117,13 +281,15 @@ public class ScStream(byte[] buffer) : IDisposable
         _booleanAdditionalValue = 0;
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);
 
-        if (Position >= Length)
+        FlushBoolean();
+
+        if (leaveOpen)
             return;
 
-        throw new InvalidOperationException($"Read operation incomplete: {Position} / {Length} bytes read.\n{BitConverter.ToString(buffer).Replace('-', ' ').Insert(Position * 3, "> ")}");
+        await stream.DisposeAsync();
     }
 }
