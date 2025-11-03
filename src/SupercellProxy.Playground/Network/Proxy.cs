@@ -6,7 +6,7 @@ using SupercellProxy.Playground.Network.Streams;
 
 namespace SupercellProxy.Playground.Network;
 
-public class Proxy(int listenPort, int upstreamPort, string upstreamHost)
+public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
 {
     // https://github.com/ReversedCell/ScDocumentation/wiki/Encryption-Setup
     // https://github.com/ReversedCell/ScDocumentation/wiki/Protocol
