@@ -1,0 +1,24 @@
+name: Get Public Server Key
+
+on:
+  workflow_dispatch:
+    inputs:
+      file_url:
+        description: 'Direct URL to any Supercell game IPA file or libg.so dump'
+        default: 'temp.sh'
+        required: true
+        type: string
+
+jobs:
+  dump:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10'
+
+      - name: Get Server Public Key
+        run: dotnet run --project src/SupercellProxy.PublicKeyExtractor -- "${{ inputs.file_url }}" | tee -a "$GITHUB_STEP_SUMMARY"
