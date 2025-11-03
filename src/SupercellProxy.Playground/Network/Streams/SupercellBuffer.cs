@@ -3,7 +3,7 @@ using System.Text;
 
 namespace SupercellProxy.Playground.Network.Streams;
 
-public class ScBuffer(byte[] buffer) : IDisposable
+public class SupercellBuffer(byte[] buffer) : IDisposable
 {
     public int Position { get; private set; }
     public int Length => buffer.Length;

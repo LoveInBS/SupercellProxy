@@ -3,7 +3,7 @@ using System.Text;
 
 namespace SupercellProxy.Playground.Network.Streams;
 
-public class ScStream(Stream stream, bool leaveOpen = true) : IAsyncDisposable
+public class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDisposable
 {
     public int Position { get; private set; }
     public bool CanRead => stream.CanRead;

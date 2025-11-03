@@ -24,7 +24,7 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
         }
     }
 
-    private static void PacketSent(Direction direction, ushort id, ushort version, ScBuffer buffer)
+    private static void PacketSent(Direction direction, ushort id, ushort version, SupercellBuffer buffer)
     {
         // [00:00:06][serverbound,version=...0,id=10100] Hello from Client
         //     protocolVersion=3
@@ -81,7 +81,7 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
         }
     }
 
-    private static void ReadClientLoginPacket(string prefix, ScBuffer buffer)
+    private static void ReadClientLoginPacket(string prefix, SupercellBuffer buffer)
     {
         // This packet is encrypted already
         var supercellPublicKey = new byte[]
@@ -134,7 +134,7 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
         Console.WriteLine($"{prefix} Login from Client" + $"\n\thighId={highId}" + $"\n\tlowId={lowId}" + $"\n\ttoken={token}" + $"\n\tclientVersion={majorVersion}.{minorVersion}.{buildVersion}" + $"\n\tmasterHash={masterHash}" + $"\n\tunknown1={unknown1}" + $"\n\topenUdid={openUdid}" + $"\n\tmacAddress={macAddress}" + $"\n\tmodel={model}" + $"\n\tadvertiseId={advertiseId}" + $"\n\tosVersion={osVersion}" + $"\n\tisAndroid={isAndroid}" + $"\n\tunknown2={unknown2}" + $"\n\tandroidId={androidId}" + $"\n\tregion={region}");
     }
 
-    private static void ReadClientHelloPacket(string prefix, ScBuffer buffer)
+    private static void ReadClientHelloPacket(string prefix, SupercellBuffer buffer)
     {
         var protocolVersion = buffer.ReadInt32();
         var keyVersion = buffer.ReadInt32();
@@ -151,14 +151,14 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
         Console.WriteLine($"{prefix} Hello from Client" + $"\n\tprotocolVersion={protocolVersion}" + $"\n\tkeyVersion={keyVersion}" + $"\n\tclientVersion={majorVersion}.{minorVersion}.{patchVersion}" + $"\n\tfingerprintSha1={fingerprintSha1}" + $"\n\tdeviceType={deviceType}" + $"\n\tappStore={appStore}");
     }
 
-    private static void ReadServerHelloPacket(string prefix, ScBuffer buffer)
+    private static void ReadServerHelloPacket(string prefix, SupercellBuffer buffer)
     {
         var sessionKey = buffer.ReadByteArray();
 
         Console.WriteLine($"{prefix} Hello from Server" + $"\n\tsessionKey={Convert.ToHexString(sessionKey)}");
     }
 
-    private static void ReadHelloFailedPacket(string prefix, ScBuffer buffer)
+    private static void ReadHelloFailedPacket(string prefix, SupercellBuffer buffer)
     {
         // 8 - UpdateRequired
         var errorCode = buffer.ReadInt32();
@@ -185,7 +185,7 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
         Console.WriteLine($"{prefix} LoginFailed from server" + $"\n\terrorCode={errorCode}" + $"\n\tresourceFingerprintData={resourceFingerprintData}" + $"\n\tredirectDomain={redirectDomain}" + $"\n\tcontentURL={contentURL}" + $"\n\tupdateURL={updateURL}" + $"\n\treason={reason}" + $"\n\tsecondsUntilMaintenanceEnd={secondsUntilMaintenanceEnd}" + $"\n\tunknown1={unknown1}" + $"\n\tunknown2={unknown2}" + $"\n\tunknown3={unknown3}" + $"\n\tunknown4={unknown4}" + $"\n\tunknown5={unknown5}" + $"\n\tunknown6={unknown6}" + $"\n\tunknown7={unknown7}" + $"\n\tunknown8=[{string.Join(", ", unknown8)}]" + $"\n\tunknown9={unknown9}");
     }
 
-    private static void ReadUnknownPacket(string prefix, ScBuffer buffer)
+    private static void ReadUnknownPacket(string prefix, SupercellBuffer buffer)
     {
         const int maxOutputWidth = 64;
 
@@ -224,7 +224,7 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
 
             try
             {
-                using var buffer = new ScBuffer(payload);
+                using var buffer = new SupercellBuffer(payload);
                 PacketSent(direction, id, version, buffer);
             }
             catch (Exception exception)
@@ -258,5 +258,5 @@ public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
 
     private static string? PadLeft<T>(T value, int width, char @char = '.') where T : struct => value.ToString()?.PadLeft(width, @char);
 
-    private delegate void PacketReader(string prefix, ScBuffer buffer);
+    private delegate void PacketReader(string prefix, SupercellBuffer buffer);
 }
