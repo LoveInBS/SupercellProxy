@@ -2,10 +2,10 @@ using SupercellProxy.Playground.Network.Streams;
 
 namespace SupercellProxy.Playground.Network.Messages.Clientbound;
 
-public class ServerHelloMessage : IMessage
+public record ServerHelloMessage : IMessage
 {
     public required Memory<byte> SessionKey { get; init; }
-    
+
     public static ServerHelloMessage Create(MessageContainer container)
     {
         return new ServerHelloMessage
@@ -17,9 +17,9 @@ public class ServerHelloMessage : IMessage
     public MessageContainer ToContainer(ushort id = 20100, ushort version = 0)
     {
         using var supercellStream = SupercellStream.Create();
-        
+
         supercellStream.WriteByteArray(SessionKey.Span);
-        
+
         return new MessageContainer(id, version, supercellStream);
     }
 }

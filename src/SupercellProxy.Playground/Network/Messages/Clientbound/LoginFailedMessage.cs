@@ -2,7 +2,7 @@ using SupercellProxy.Playground.Network.Streams;
 
 namespace SupercellProxy.Playground.Network.Messages.Clientbound;
 
-public class LoginFailedMessage : IMessage
+public record LoginFailedMessage : IMessage
 {
     public enum Type : int
     {
@@ -43,7 +43,7 @@ public class LoginFailedMessage : IMessage
         /// </summary>
         Locked = 13
     };
-    
+
     public required Type ErrorCode { get; init; }
     public required string ResourceFingerprintData { get; init; }
     public required string RedirectDomain { get; init; }
@@ -52,7 +52,7 @@ public class LoginFailedMessage : IMessage
     public required string Reason { get; init; }
     public required int SecondsUntilMaintenanceEnd { get; init; }
     public required Memory<byte> UnknownBytes { get; init; }
-    
+
     public static LoginFailedMessage Create(MessageContainer container)
     {
         return new LoginFailedMessage
@@ -71,7 +71,7 @@ public class LoginFailedMessage : IMessage
     public MessageContainer ToContainer(ushort id = 20103, ushort version = 2)
     {
         using var supercellStream = SupercellStream.Create();
-        
+
         supercellStream.WriteInt32((int)ErrorCode);
         supercellStream.WriteString(ResourceFingerprintData);
         supercellStream.WriteString(RedirectDomain);
@@ -80,7 +80,7 @@ public class LoginFailedMessage : IMessage
         supercellStream.WriteString(Reason);
         supercellStream.WriteInt32(SecondsUntilMaintenanceEnd);
         supercellStream.Write(UnknownBytes.Span);
-        
+
         return new MessageContainer(id, version, supercellStream);
     }
 }

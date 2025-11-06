@@ -1,22 +1,21 @@
+using SupercellProxy.Playground.Network.Messages;
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Xml;
-using SupercellProxy.Playground.Network.Messages;
 
 namespace SupercellProxy.Playground.Network.Streams;
 
 public partial class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDisposable, IDisposable
 {
-    public int Position { get; private set; }
+    public long Position { get => GetMemoryStream().Position; set => GetMemoryStream().Position = value; }
     public long Length => GetMemoryStream().Length;
 
     public static SupercellStream Create()
     {
         return new SupercellStream(new MemoryStream());
     }
-    
+
     public MessageContainer ReadMessage()
     {
         var headerSpan = ReadExactly(stackalloc byte[7]);
@@ -44,15 +43,15 @@ public partial class SupercellStream(Stream stream, bool leaveOpen = true) : IAs
     public void WriteMessage(MessageContainer messageContainer)
     {
         var headerSpan = (stackalloc byte[7]);
-        
+
         BinaryPrimitives.WriteUInt16BigEndian(headerSpan[..2], messageContainer.Id);
 
         var length = messageContainer.Payload.Length;
-        
+
         headerSpan[2] = (byte)(length >> 16);
         headerSpan[3] = (byte)(length >> 8);
         headerSpan[4] = (byte)length;
-        
+
         BinaryPrimitives.WriteUInt16BigEndian(headerSpan[5..7], messageContainer.Version);
 
         Write(headerSpan);
@@ -67,15 +66,15 @@ public partial class SupercellStream(Stream stream, bool leaveOpen = true) : IAs
     {
         var headerMemory = RentExactly(7);
         var headerSpan = headerMemory.Span;
-        
+
         BinaryPrimitives.WriteUInt16BigEndian(headerSpan[..2], messageContainer.Id);
 
         var length = messageContainer.Payload.Length;
-        
+
         headerSpan[2] = (byte)(length >> 16);
         headerSpan[3] = (byte)(length >> 8);
         headerSpan[4] = (byte)length;
-        
+
         BinaryPrimitives.WriteUInt16BigEndian(headerSpan[5..7], messageContainer.Version);
 
         await WriteAsync(headerMemory, cancellationToken);
@@ -90,15 +89,15 @@ public partial class SupercellStream(Stream stream, bool leaveOpen = true) : IAs
     {
         return GetMemoryStream().ToArray();
     }
-    
+
     private MemoryStream GetMemoryStream()
     {
         if (!TryGetMemoryStream(out var memoryStream))
             throw new NotSupportedException("This is online stream.");
-        
+
         return memoryStream;
     }
-    
+
     private bool TryGetMemoryStream([MaybeNullWhen(false)] out MemoryStream memoryStream)
     {
         memoryStream = stream as MemoryStream;
@@ -113,7 +112,7 @@ public partial class SupercellStream(Stream stream, bool leaveOpen = true) : IAs
         Console.WriteLine("copy ...");
         return new SupercellStream(new MemoryStream(memory.ToArray()));
     }
-    
+
     public async ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);
@@ -125,7 +124,7 @@ public partial class SupercellStream(Stream stream, bool leaveOpen = true) : IAs
 
         await stream.DisposeAsync();
     }
-    
+
     public void Dispose()
     {
         GC.SuppressFinalize(this);
@@ -142,7 +141,7 @@ public partial class SupercellStream(Stream stream, bool leaveOpen = true) : IAs
     {
         if (!TryGetMemoryStream(out var memoryStream))
             return base.ToString();
-            
+
         var builder = new StringBuilder();
         var hex = Convert.ToHexString(memoryStream.ToArray());
 
@@ -155,7 +154,7 @@ public partial class SupercellStream(Stream stream, bool leaveOpen = true) : IAs
             builder.Append(hex, 0, 125);
             builder.Append("...");
         }
-        
+
         return builder.ToString();
     }
 }

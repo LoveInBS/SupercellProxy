@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Net.Http.Headers;
 using System.Text;
 
 namespace SupercellProxy.Playground.Network.Streams;
@@ -16,11 +15,10 @@ public partial class SupercellStream
         ResetReadBoolean();
 
         var value = stream.ReadByte();
-        
+
         if (value < 0)
             throw new EndOfStreamException();
 
-        Position += 1;
         return (byte)value;
     }
 
@@ -57,7 +55,7 @@ public partial class SupercellStream
 
         var buffer = new byte[length];
         ReadExactly(buffer);
-        
+
         return buffer;
     }
 

@@ -2,7 +2,7 @@ using SupercellProxy.Playground.Network.Streams;
 
 namespace SupercellProxy.Playground.Network.Messages.Serverbound;
 
-public class ClientHelloMessage : IMessage
+public record ClientHelloMessage : IMessage
 {
     public required int ProtocolVersion { get; init; }
     public required int KeyVersion { get; init; }
@@ -15,7 +15,7 @@ public class ClientHelloMessage : IMessage
 
     public required int DeviceType { get; init; }
     public required int AppStore { get; init; }
-    
+
     public static ClientHelloMessage Create(MessageContainer container)
     {
         return new ClientHelloMessage
@@ -37,19 +37,19 @@ public class ClientHelloMessage : IMessage
     public MessageContainer ToContainer(ushort id = 10100, ushort version = 0)
     {
         using var supercellStream = SupercellStream.Create();
-        
+
         supercellStream.WriteInt32(ProtocolVersion);
         supercellStream.WriteInt32(KeyVersion);
-        
+
         supercellStream.WriteInt32(MajorVersion);
         supercellStream.WriteInt32(MinorVersion);
         supercellStream.WriteInt32(PatchVersion);
-        
+
         supercellStream.WriteString(FingerprintSha1);
-        
+
         supercellStream.WriteInt32(DeviceType);
         supercellStream.WriteInt32(AppStore);
-        
+
         return new MessageContainer(id, version, supercellStream);
     }
 }
