@@ -10,6 +10,14 @@ using System.Net.Sockets;
 
 namespace SupercellProxy.Playground.Network.Sides;
 
+// There are multiple ways to implement a proxy that can decrypt packets.
+// 1) Get the 'client private key' from the app and give it to the proxy (not sure but maybe 'snonce' needed as well).
+// 2) Replace the 'server public key' in the app with 'proxy public key', re-encrypt packets on the proxy.
+// CoCSharp.Proxy uses second approach - https://github.com/FICTURE7/CoCSharp/blob/d8602264fd185a9236197502eb40aa57019bf4be/src/CoCSharp.Proxy/MessageProcessorNaClProxy.cs#L99
+// They introduced a "standard" key for modded servers at Crypto8.StandardKeyPair, so here is the encoded 'standard(proxy) public key' for the client:
+// 5E2E00002929000047620000DA440000841800003CC400007400000029660000CDA90000A9B10000D4A000001CD40000A076000060E700006EFD0000EC27000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+// If the goal is just to log unencrypted packets, maybe patch the app to log them directly.
+
 public class Proxy(string upstreamHost, int upstreamPort, string listenAddress, int listenPort)
 {
     // https://github.com/ReversedCell/ScDocumentation/wiki/Encryption-Setup

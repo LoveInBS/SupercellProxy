@@ -37,7 +37,9 @@ public static class PublicKeyBox
 
         var publicKey = new byte[PublicKeyLength];
 
-        curve25519xsalsa20poly1305.crypto_box_getpublickey(privateKey, publicKey);
+        // TODO: publicKey and privateKey are swapped?
+        // https://github.com/FICTURE7/CoCSharp/blob/d8602264fd185a9236197502eb40aa57019bf4be/src/CoCSharp/Network/Cryptography/NaCl/PublicKeyBox.cs#L41
+        curve25519xsalsa20poly1305.crypto_box_getpublickey(publicKey, privateKey);
         return new KeyPair(publicKey, privateKey);
     }
 
