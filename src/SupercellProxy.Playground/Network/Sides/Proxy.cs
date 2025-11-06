@@ -1,12 +1,7 @@
-using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
-using SupercellProxy.Playground.Crypto;
-using SupercellProxy.Playground.Extensions;
-using SupercellProxy.Playground.Network.Buffers;
 using SupercellProxy.Playground.Network.Messages;
 using SupercellProxy.Playground.Network.Streams;
-using SupercellProxy.Playground.Supercell;
 
 namespace SupercellProxy.Playground.Network.Sides;
 
@@ -72,8 +67,6 @@ public class Proxy(string upstreamHost, int upstreamPort, string listenAddress, 
             Console.WriteLine($"[{DateTime.Now:T}] {remote} closed: {exception.Message}");
         }
     }
-
-    private delegate void PacketReader(string prefix, SupercellBuffer buffer);
 }
 
 // [00:00:06][serverbound,version=...0,id=10100] Hello from Client
