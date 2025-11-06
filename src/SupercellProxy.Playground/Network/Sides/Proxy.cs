@@ -1,3 +1,5 @@
+using SupercellProxy.Playground.Crypto;
+using SupercellProxy.Playground.Crypto.NaCl;
 using SupercellProxy.Playground.Network.Messages;
 using SupercellProxy.Playground.Network.Messages.Clientbound;
 using SupercellProxy.Playground.Network.Messages.Serverbound;
@@ -37,9 +39,18 @@ public class Proxy(string upstreamHost, int upstreamPort, string listenAddress, 
                 Console.WriteLine($"[{DateTime.Now:T}] {ServerHelloMessage.Create(container)}");
                 return;
             case 10101:
-                Console.WriteLine($"[{DateTime.Now:T}] Client public key: {Convert.ToHexString(container.Payload.ReadExactly(stackalloc byte[32]))}");
-                Console.WriteLine($"[{DateTime.Now:T}] Server public key: {Convert.ToHexString(await HayDayApi.GetServerPublicKeyAsync(cancellationToken))}");
+                var serverPublicKey = await HayDayApi.GetServerPublicKeyAsync(cancellationToken);
+                var clientPublicKey = container.Payload.ReadExactly(stackalloc byte[32]).ToArray();
+
+                Console.WriteLine($"[{DateTime.Now:T}] Server public key: {Convert.ToHexString(serverPublicKey)}");
+                Console.WriteLine($"[{DateTime.Now:T}] Client public key: {Convert.ToHexString(clientPublicKey)}");
                 Console.WriteLine($"[{DateTime.Now:T}] {direction} => {container}");
+
+                var buffer = container.Payload.ReadToEnd().ToArray();
+
+                var serverboundCrypto = new Crypto8(Direction.Serverbound, new KeyPair(clientPublicKey, [/*client secret key*/]));
+                serverboundCrypto.UpdateSharedKey(serverPublicKey);
+                serverboundCrypto.Decrypt(ref buffer);
                 return;
         }
 
