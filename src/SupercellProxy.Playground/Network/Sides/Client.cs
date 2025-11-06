@@ -1,11 +1,10 @@
-using System.Net.Sockets;
-using System.Text.RegularExpressions;
 using SupercellProxy.Playground.Crypto;
 using SupercellProxy.Playground.Network.Messages;
 using SupercellProxy.Playground.Network.Messages.Clientbound;
 using SupercellProxy.Playground.Network.Messages.Serverbound;
 using SupercellProxy.Playground.Network.Streams;
 using SupercellProxy.Playground.Supercell;
+using System.Net.Sockets;
 
 namespace SupercellProxy.Playground.Network.Sides;
 
@@ -15,7 +14,7 @@ public partial class Client(string upstreamHost, int upstreamPort)
     {
         using var upstream = new TcpClient();
         await upstream.ConnectAsync(upstreamHost, upstreamPort, cancellationToken);
-        
+
         await using var networkStream = upstream.GetStream();
         await using var supercellStream = new SupercellStream(networkStream);
 
@@ -23,7 +22,7 @@ public partial class Client(string upstreamHost, int upstreamPort)
         var clientHelloContainer = CreateClientHello().ToContainer();
         Console.WriteLine(clientHelloContainer);
         await supercellStream.WriteMessageAsync(clientHelloContainer, cancellationToken);
-        
+
         // 20100
         var serverHelloContainer = await supercellStream.ReadMessageAsync(cancellationToken);
         var serverHello = ServerHelloMessage.Create(serverHelloContainer);
@@ -33,7 +32,7 @@ public partial class Client(string upstreamHost, int upstreamPort)
         var loginContainer = CreateLoginMessageContainer(await HayDayApi.GetServerPublicKeyAsync(cancellationToken), serverHello.SessionKey);
         Console.WriteLine(loginContainer);
         await supercellStream.WriteMessageAsync(loginContainer, cancellationToken);
-        
+
         // any
         var anyContainer = await supercellStream.ReadMessageAsync(cancellationToken);
         Console.WriteLine(anyContainer);
@@ -70,23 +69,23 @@ public partial class Client(string upstreamHost, int upstreamPort)
         loginMessageStream.WriteString(""); // ClientVersion = reader.ReadString();
 
         var loginMessageBuffer = loginMessageStream.ToArray();
-        
-        // https://github.com/FICTURE7/CoCSharp/blob/server-dev/src/CoCSharp.Proxy/MessageProcessorNaClProxy.cs#L102
-        
+
+        // https://github.com/FICTURE7/CoCSharp/blob/server-dev/src/CoCSharp/Network/MessageProcessorNaCl.cs#L387
+
         var localKeyPair = Crypto8.GenerateKeyPair();
         var localNonce = Crypto8.GenerateNonce();
-        
+
         var serverboundCrypto = new Crypto8(Direction.Serverbound, localKeyPair);
-        
-        loginMessageBuffer = [..sessionKey.Span, ..localNonce, ..loginMessageBuffer];
+
+        loginMessageBuffer = [.. sessionKey.Span, .. localNonce, .. loginMessageBuffer];
         serverboundCrypto.UpdateSharedKey(serverPublicKey.ToArray());
         serverboundCrypto.Encrypt(ref loginMessageBuffer);
 
         Console.WriteLine(Convert.ToHexString(localKeyPair.PublicKey));
-        
-        return new MessageContainer(10101, 3242, new SupercellStream(new MemoryStream([..localKeyPair.PublicKey, ..loginMessageBuffer])));
+
+        return new MessageContainer(10101, 3242, new SupercellStream(new MemoryStream([.. localKeyPair.PublicKey, .. loginMessageBuffer])));
     }
-    
+
     private static ClientHelloMessage CreateClientHello()
     {
         return new ClientHelloMessage

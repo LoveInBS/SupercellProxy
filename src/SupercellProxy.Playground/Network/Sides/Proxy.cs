@@ -56,6 +56,8 @@ public class Proxy(string upstreamHost, int upstreamPort, string listenAddress, 
 
                 var buffer = container.Payload.ReadToEnd().ToArray();
 
+                // https://github.com/FICTURE7/CoCSharp/blob/d8602264fd185a9236197502eb40aa57019bf4be/src/CoCSharp.Proxy/MessageProcessorNaClProxy.cs#L99
+
                 var serverboundCrypto = new Crypto8(Direction.Serverbound, new KeyPair(clientPublicKey, [/*client secret key*/]));
                 serverboundCrypto.UpdateSharedKey(serverPublicKey);
                 serverboundCrypto.Decrypt(ref buffer);
