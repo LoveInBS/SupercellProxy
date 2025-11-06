@@ -1,4 +1,5 @@
-﻿using SupercellProxy.Playground.Network;
+﻿using SupercellProxy.Playground.Network.Sides;
+using Client = SupercellProxy.Playground.Network.Sides.Client;
 
 var upstreamHost = args.Length > 0 ? args[0] : "game.haydaygame.com";
 var upstreamPort = args.Length > 1 && int.TryParse(args[1], out var up) ? up : 9339;

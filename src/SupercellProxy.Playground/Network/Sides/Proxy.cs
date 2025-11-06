@@ -2,9 +2,10 @@ using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
 using SupercellProxy.Playground.Crypto;
-using SupercellProxy.Playground.Network.Streams;
+using SupercellProxy.Playground.Network.Buffers;
+using SupercellProxy.Playground.Network.Messages;
 
-namespace SupercellProxy.Playground.Network;
+namespace SupercellProxy.Playground.Network.Sides;
 
 public class Proxy(string upstreamHost, int upstreamPort, int listenPort)
 {

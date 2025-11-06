@@ -1,4 +1,4 @@
-﻿namespace SupercellProxy.Playground.Network;
+﻿namespace SupercellProxy.Playground.Network.Messages;
 
 public enum Direction
 {

@@ -1,7 +1,7 @@
 ﻿using System.Buffers.Binary;
 using System.Text;
 
-namespace SupercellProxy.Playground.Network.Streams;
+namespace SupercellProxy.Playground.Network.Buffers;
 
 public class SupercellBuffer(byte[] buffer) : IDisposable
 {
