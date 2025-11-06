@@ -38,6 +38,13 @@ public partial class SupercellStream
         return buffer;
     }
 
+    public Memory<byte> ReadToEnd()
+    {
+        var buffer = new byte[Length - Position];
+        ReadExactly(buffer);
+        return buffer;
+    }
+
     public Memory<byte> ReadByteArray()
     {
         var length = ReadInt32();

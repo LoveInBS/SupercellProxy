@@ -5,13 +5,12 @@ using SupercellProxy.Playground.Network.Messages;
 using SupercellProxy.Playground.Network.Messages.Clientbound;
 using SupercellProxy.Playground.Network.Messages.Serverbound;
 using SupercellProxy.Playground.Network.Streams;
+using SupercellProxy.Playground.Supercell;
 
 namespace SupercellProxy.Playground.Network.Sides;
 
 public partial class Client(string upstreamHost, int upstreamPort)
 {
-    private readonly HttpClient _httpClient = new();
-    
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
         using var upstream = new TcpClient();
@@ -31,7 +30,7 @@ public partial class Client(string upstreamHost, int upstreamPort)
         Console.WriteLine(serverHelloContainer);
 
         // 10101
-        var loginContainer = CreateLoginMessageContainer(await GetHayDayPublicKeyAsync(cancellationToken), serverHello.SessionKey);
+        var loginContainer = CreateLoginMessageContainer(await HayDayApi.GetServerPublicKeyAsync(cancellationToken), serverHello.SessionKey);
         Console.WriteLine(loginContainer);
         await supercellStream.WriteMessageAsync(loginContainer, cancellationToken);
         
@@ -87,17 +86,6 @@ public partial class Client(string upstreamHost, int upstreamPort)
         
         return new MessageContainer(10101, 3242, new SupercellStream(new MemoryStream([..localKeyPair.PublicKey, ..loginMessageBuffer])));
     }
-
-    private async ValueTask<byte[]> GetHayDayPublicKeyAsync(CancellationToken cancellationToken = default)
-    {
-        var content = await _httpClient.GetStringAsync("https://raw.githubusercontent.com/caunt/SupercellProxy/refs/heads/main/KEYS.md", cancellationToken);
-        var hayDayMatch = HayDayPublicKeyRegex().Match(content);
-        
-        if (!hayDayMatch.Success) 
-            throw new InvalidOperationException("Hay Day key not found.");
-
-        return Convert.FromHexString(hayDayMatch.Groups[1].Value);
-    }
     
     private static ClientHelloMessage CreateClientHello()
     {
@@ -118,7 +106,4 @@ public partial class Client(string upstreamHost, int upstreamPort)
             AppStore = 1
         };
     }
-
-    [GeneratedRegex(@"(?s)##\s*Hay Day.*?`([0-9A-Fa-f]{64})`")]
-    private static partial Regex HayDayPublicKeyRegex();
 }
