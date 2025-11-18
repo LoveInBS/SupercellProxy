@@ -138,6 +138,19 @@ public partial class SupercellStream
         return BinaryPrimitives.ReadUInt64BigEndian(memory.Span);
     }
 
+    public string? ReadOptionalString()
+    {
+        var length = ReadInt32();
+
+        if (length < 0)
+            return null;
+
+        if (length is 0)
+            return string.Empty;
+
+        return Encoding.UTF8.GetString(ReadExactly(stackalloc byte[length]));
+    }
+
     public string ReadString()
     {
         var length = ReadInt32();
@@ -149,6 +162,20 @@ public partial class SupercellStream
             return string.Empty;
 
         return Encoding.UTF8.GetString(ReadExactly(stackalloc byte[length]));
+    }
+
+    public async ValueTask<string?> ReadOptionalStringAsync(CancellationToken cancellationToken = default)
+    {
+        var length = await ReadInt32Async(cancellationToken);
+
+        if (length < 0)
+            return null;
+
+        if (length is 0)
+            return string.Empty;
+
+        var memory = await ReadExactlyAsync(RentExactly(length), cancellationToken);
+        return Encoding.UTF8.GetString(memory.Span);
     }
 
     public async ValueTask<string> ReadStringAsync(CancellationToken cancellationToken = default)
