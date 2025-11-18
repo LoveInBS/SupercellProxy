@@ -1,10 +1,12 @@
 # Supercell Games - Server Public Keys
 - Keys below are extracted with [this automated workflow](https://github.com/caunt/SupercellProxy/blob/main/.github/workflows/server-public-key.yaml) ([source code](https://github.com/caunt/SupercellProxy/blob/main/src/SupercellProxy.PublicKeyExtractor/EntryPoint.cs))
+- Keys are changed on each Major version number increase.
 
 ## [Brawl Stars](https://decrypt.day/app/id1229016807)
 | Version | Key                                                                |
 | ------- | ------------------------------------------------------------------ |
 | 64.226  | `0BD3FB945510B29F5FF6304859FDE0EFC8EAE01AF3557B3F4DDE317FAA91BB5D` |
+| 64.264  | `0BD3FB945510B29F5FF6304859FDE0EFC8EAE01AF3557B3F4DDE317FAA91BB5D` |
 
 ## [Hay Day](https://decrypt.day/app/id506627515)
 | Version  | Key                                                                |
@@ -15,6 +17,7 @@
 | Version   | Key                                                                |
 | --------- | ------------------------------------------------------------------ |
 | 17.477.13 | `911FED96AB0EC355FAC512384243A334EB4CCF09BC8AA705DB52C0528AB4E402` |
+| 17.477.15 | `911FED96AB0EC355FAC512384243A334EB4CCF09BC8AA705DB52C0528AB4E402` |
 
 ## [Clash Royale](https://decrypt.day/app/id1053012308)
 | Version   | Key                                                                |
@@ -36,3 +39,4 @@
 | Version | Key                                                                |
 | ------- | ------------------------------------------------------------------ |
 | 9.7.1   | `7E0CF8813091BE6A7E0A14AE93F3444DC6F6481636DA50D265125A3028ED5654` |
+| 10.14.2 | `5840DF94C209653E8F7316BC10E4811BE004689C6B21DBD0728D4C8B581A0F31` |
