@@ -144,7 +144,7 @@ public partial class SupercellStream
         await stream.WriteAsync(memory, cancellationToken);
     }
 
-    public void WriteOptionalString(string? value)
+    public void WriteOptionalString(string? value = null)
     {
         if (value is null)
         {
@@ -176,7 +176,7 @@ public partial class SupercellStream
         stream.Write(span);
     }
 
-    public async ValueTask WriteOptionalStringAsync(string? value, CancellationToken cancellationToken = default)
+    public async ValueTask WriteOptionalStringAsync(string? value = null, CancellationToken cancellationToken = default)
     {
         if (value is null)
         {
