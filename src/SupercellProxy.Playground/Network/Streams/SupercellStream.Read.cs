@@ -99,10 +99,21 @@ public partial class SupercellStream
         return BinaryPrimitives.ReadInt32BigEndian(ReadExactly(stackalloc byte[sizeof(int)]));
     }
 
-    public async ValueTask<long> ReadInt64Async(CancellationToken cancellationToken = default)
+    public async ValueTask<int> ReadInt32Async(CancellationToken cancellationToken = default)
     {
-        var memory = await ReadExactlyAsync(RentExactly(sizeof(long)), cancellationToken);
-        return BinaryPrimitives.ReadInt64BigEndian(memory.Span);
+        var memory = await ReadExactlyAsync(RentExactly(sizeof(int)), cancellationToken);
+        return BinaryPrimitives.ReadInt32BigEndian(memory.Span);
+    }
+
+    public uint ReadUInt32()
+    {
+        return BinaryPrimitives.ReadUInt32BigEndian(ReadExactly(stackalloc byte[sizeof(uint)]));
+    }
+
+    public async ValueTask<uint> ReadUInt32Async(CancellationToken cancellationToken = default)
+    {
+        var memory = await ReadExactlyAsync(RentExactly(sizeof(uint)), cancellationToken);
+        return BinaryPrimitives.ReadUInt32BigEndian(memory.Span);
     }
 
     public long ReadInt64()
@@ -110,10 +121,21 @@ public partial class SupercellStream
         return BinaryPrimitives.ReadInt64BigEndian(ReadExactly(stackalloc byte[sizeof(long)]));
     }
 
-    public async ValueTask<int> ReadInt32Async(CancellationToken cancellationToken = default)
+    public async ValueTask<long> ReadInt64Async(CancellationToken cancellationToken = default)
     {
-        var memory = await ReadExactlyAsync(RentExactly(sizeof(int)), cancellationToken);
-        return BinaryPrimitives.ReadInt32BigEndian(memory.Span);
+        var memory = await ReadExactlyAsync(RentExactly(sizeof(ulong)), cancellationToken);
+        return BinaryPrimitives.ReadInt64BigEndian(memory.Span);
+    }
+
+    public ulong ReadUInt64()
+    {
+        return BinaryPrimitives.ReadUInt64BigEndian(ReadExactly(stackalloc byte[sizeof(long)]));
+    }
+
+    public async ValueTask<ulong> ReadUInt64Async(CancellationToken cancellationToken = default)
+    {
+        var memory = await ReadExactlyAsync(RentExactly(sizeof(ulong)), cancellationToken);
+        return BinaryPrimitives.ReadUInt64BigEndian(memory.Span);
     }
 
     public string ReadString()

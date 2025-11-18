@@ -8,6 +8,7 @@ namespace SupercellProxy.Playground.Network.Streams;
 
 public partial class SupercellStream(Stream stream, bool leaveOpen = true) : IAsyncDisposable, IDisposable
 {
+    public const int MaxPayloadLength = 0x1000000;
     public long Position { get => GetMemoryStream().Position; set => GetMemoryStream().Position = value; }
     public long Length => GetMemoryStream().Length;
 
@@ -42,6 +43,8 @@ public partial class SupercellStream(Stream stream, bool leaveOpen = true) : IAs
 
     public void WriteMessage(MessageContainer messageContainer)
     {
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(messageContainer.Payload.Length, MaxPayloadLength, nameof(messageContainer.Payload.Length));
+
         var headerSpan = (stackalloc byte[7]);
 
         BinaryPrimitives.WriteUInt16BigEndian(headerSpan[..2], messageContainer.Id);
@@ -60,6 +63,7 @@ public partial class SupercellStream(Stream stream, bool leaveOpen = true) : IAs
         memoryStream.Position = 0;
 
         memoryStream.CopyTo(stream);
+        stream.Flush();
     }
 
     public async ValueTask WriteMessageAsync(MessageContainer messageContainer, CancellationToken cancellationToken = default)

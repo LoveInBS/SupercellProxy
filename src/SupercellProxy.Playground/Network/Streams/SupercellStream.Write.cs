@@ -90,12 +90,48 @@ public partial class SupercellStream
         await stream.WriteAsync(memory, cancellationToken);
     }
 
+    public void WriteUInt32(uint value)
+    {
+        FlushWriteBoolean();
+
+        var span = (stackalloc byte[sizeof(uint)]);
+        BinaryPrimitives.WriteUInt32BigEndian(span, value);
+        stream.Write(span);
+    }
+
+    public async ValueTask WriteUInt32Async(uint value, CancellationToken cancellationToken = default)
+    {
+        FlushWriteBoolean();
+
+        var memory = RentExactly(sizeof(uint));
+        BinaryPrimitives.WriteUInt32BigEndian(memory.Span, value);
+        await stream.WriteAsync(memory, cancellationToken);
+    }
+
     public void WriteInt64(long value)
     {
         FlushWriteBoolean();
 
         var span = (stackalloc byte[sizeof(long)]);
         BinaryPrimitives.WriteInt64BigEndian(span, value);
+        stream.Write(span);
+    }
+
+    public async ValueTask WriteUInt64Async(ulong value, CancellationToken cancellationToken = default)
+    {
+        FlushWriteBoolean();
+
+        var memory = RentExactly(sizeof(ulong));
+        BinaryPrimitives.WriteUInt64BigEndian(memory.Span, value);
+        await stream.WriteAsync(memory, cancellationToken);
+    }
+
+    public void WriteUInt64(ulong value)
+    {
+        FlushWriteBoolean();
+
+        var span = (stackalloc byte[sizeof(ulong)]);
+        BinaryPrimitives.WriteUInt64BigEndian(span, value);
         stream.Write(span);
     }
 
@@ -108,7 +144,20 @@ public partial class SupercellStream
         await stream.WriteAsync(memory, cancellationToken);
     }
 
-    public void WriteString(string? value)
+    public void WriteString(string value)
+    {
+        var length = Encoding.UTF8.GetByteCount(value);
+        WriteInt32(length);
+
+        if (length is 0)
+            return;
+
+        var span = (stackalloc byte[length]);
+        Encoding.UTF8.GetBytes(value, span);
+        stream.Write(span);
+    }
+
+    public void WriteOptionalString(string? value)
     {
         if (value is null)
         {
@@ -118,7 +167,7 @@ public partial class SupercellStream
 
         var length = Encoding.UTF8.GetByteCount(value);
         WriteInt32(length);
-        
+
         if (length is 0)
             return;
 
@@ -149,7 +198,7 @@ public partial class SupercellStream
     public void WriteVarInt(int value)
     {
         FlushWriteBoolean();
-    
+
         var temp = (value >> 25) & 0x40;
         var flipped = value ^ (value >> 31);
 
@@ -185,7 +234,7 @@ public partial class SupercellStream
     public async ValueTask WriteVarIntAsync(int value, CancellationToken cancellationToken = default)
     {
         FlushWriteBoolean();
-    
+
         var temp = (value >> 25) & 0x40;
         var flipped = value ^ (value >> 31);
 
@@ -218,14 +267,14 @@ public partial class SupercellStream
 
         await stream.WriteAsync(memory[..index], cancellationToken);
     }
-    
+
     private void FlushWriteBoolean()
     {
         if (_booleanWriteOffset <= 0)
             return;
 
         stream.WriteByte(_booleanWriteAccumulator);
-        
+
         _booleanWriteOffset = 0;
         _booleanWriteAccumulator = 0;
     }
