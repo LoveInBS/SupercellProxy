@@ -55,11 +55,12 @@ public partial class Client(string upstreamHost, int upstreamPort)
         var loginMessageStream = SupercellStream.Create();
 
         // Account/Session ID - Low/High
-        loginMessageStream.WriteUInt32(0);
-        loginMessageStream.WriteUInt32(0);
-
+        // loginMessageStream.WriteUInt32(0);
+        // loginMessageStream.WriteUInt32(0);
+        loginMessageStream.WriteInt64(77315876446);
+        
         // pass token
-        loginMessageStream.WriteOptionalString("");
+        loginMessageStream.WriteOptionalString("8fmjfbydma48wfbpnkc4tz6xre2yetzg3twa3jx2");
 
         // resource sha
         loginMessageStream.WriteOptionalString("fdb648cea5e3494c3cafc32eca103331d85c5bfd"); // required 20 bytes sha1
@@ -68,15 +69,15 @@ public partial class Client(string upstreamHost, int upstreamPort)
         loginMessageStream.WriteUInt32(1117359); // sub_1002C9648
 
         // device id triplet - udid, openudid, macaddress
+        loginMessageStream.WriteOptionalString();
         loginMessageStream.WriteOptionalString("e4b7c2a9f13d58be");
-        loginMessageStream.WriteOptionalString("9f0c3a7e2b1d4c56a8e0f23b5d79c1ab");
-        loginMessageStream.WriteOptionalString("01:5a:40:c7:c2:c3");
+        loginMessageStream.WriteOptionalString();
 
         // device
         loginMessageStream.WriteOptionalString("iPad12.1");
 
         // adid
-        loginMessageStream.WriteOptionalString("97AFD440-1537-47F2-A2D4-0ACCC1C78BE1");
+        loginMessageStream.WriteOptionalString("49b4c3e4-d85b-4628-b55c-4bf70350417c");
 
         // add tacking enabled
         loginMessageStream.WriteBoolean(true);
@@ -85,22 +86,22 @@ public partial class Client(string upstreamHost, int upstreamPort)
         loginMessageStream.WriteOptionalString("18.2");
 
         // model
-        loginMessageStream.WriteString("iPad");
+        loginMessageStream.WriteString("");
 
         // manufacturer
-        loginMessageStream.WriteString("Apple");
+        loginMessageStream.WriteString("8dcc54fdd8cbb59c");
 
         // preferred language id
-        loginMessageStream.WriteOptionalString("en-US");
+        loginMessageStream.WriteOptionalString("EN");
 
         // region
-        loginMessageStream.WriteString("US");
+        loginMessageStream.WriteString("");
 
         // unknown flag
         loginMessageStream.WriteBoolean(true);
 
         // app version
-        loginMessageStream.WriteString("1.67.175");
+        loginMessageStream.WriteString("");
 
         // build
         loginMessageStream.WriteUInt32(1);
@@ -118,14 +119,14 @@ public partial class Client(string upstreamHost, int upstreamPort)
         var clientPrivateKey = RandomNumberGenerator.GetBytes(count: 32);
         var clientPublicKey = TweetNaCl.CryptoScalarmultBase(clientPrivateKey);
         var clientNonce = RandomNumberGenerator.GetBytes(count: 24);
+        clientNonce[0] &= 0xFE;
 
         var hasher = Blake2b.CreateIncrementalHasher(digestLength: 24);
         hasher.Update(clientPublicKey);
         hasher.Update(serverPublicKey);
         var tempNonce = hasher.Finish();
 
-        var encrypted = CustomNaCl.CreatePublicBox([.. sessionToken, .. clientNonce, .. loginMessageBuffer], tempNonce, clientPrivateKey, serverPublicKey.ToArray());
-        var encryptedWorking = TweetNaCl.CryptoBox([.. sessionToken, .. clientNonce, .. loginMessageBuffer], tempNonce, serverPublicKey.ToArray(), clientPrivateKey);
+        var encrypted = TweetNaCl.CryptoBox([.. sessionToken, .. clientNonce, .. loginMessageBuffer], tempNonce, clientPrivateKey, serverPublicKey.ToArray());
 
         return new MessageContainer(10101, 3247, new SupercellStream(new MemoryStream([.. clientPublicKey, .. encrypted])));
 
